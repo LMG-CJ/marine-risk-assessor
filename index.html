@@ -1062,6 +1062,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="pf-head">
         <div><h1>Insured portfolio</h1><p>Saved vessels. Re-open any ship to amend its details and see the risk &amp; premium move.</p></div>
         <div class="spacer"></div>
+        <button class="btn primary" onclick="exportPortfolioXlsx()" title="Download the portfolio as an Excel spreadsheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg> Export Excel</button>
         <button class="btn" onclick="exportPortfolio()" title="Download the portfolio as JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Export JSON</button>
       </div>
       <div class="pf-stats" id="pf-stats"></div>
@@ -1943,6 +1944,48 @@ window.addEventListener('load', function(){
   try { document.getElementById('f-imo').value = '9456321'; lookupVessel('9456321', { fast:true, silent:true }); } catch(e){}
   try { updateLive(); } catch(e){}
 });
+</script>
+<script>
+/* ===== Portfolio → Excel (.xlsx) — dependency-free, offline ===== */
+(function(){
+  var CT='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+  var RELS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  var WB='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Portfolio" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  var WBR='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  var STY='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;£&quot;#,##0"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  var COLS='<cols><col min="1" max="1" width="22" customWidth="1"/><col min="2" max="2" width="12" customWidth="1"/><col min="3" max="3" width="26" customWidth="1"/><col min="4" max="4" width="20" customWidth="1"/><col min="5" max="5" width="10" customWidth="1"/><col min="6" max="6" width="11" customWidth="1"/><col min="7" max="7" width="12" customWidth="1"/><col min="8" max="8" width="18" customWidth="1"/></cols>';
+  function u8(s){return new TextEncoder().encode(s);}
+  var T;
+  function crc32(b){if(!T){T=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);T[n]=c>>>0;}}var crc=0xFFFFFFFF;for(var i=0;i<b.length;i++)crc=(crc>>>8)^T[(crc^b[i])&0xFF];return (crc^0xFFFFFFFF)>>>0;}
+  function n16(n){return new Uint8Array([n&255,(n>>>8)&255]);}
+  function n32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255]);}
+  function cat(a){var l=0;a.forEach(function(x){l+=x.length;});var o=new Uint8Array(l),pp=0;a.forEach(function(x){o.set(x,pp);pp+=x.length;});return o;}
+  function zip(files){var parts=[],central=[],off=0;function push(x){parts.push(x);off+=x.length;}
+    files.forEach(function(f){var nm=u8(f.name),d=f.data,crc=crc32(d),at=off;
+      push(cat([n32(0x04034b50),n16(20),n16(0),n16(0),n16(0),n16(0),n32(crc),n32(d.length),n32(d.length),n16(nm.length),n16(0),nm]));push(d);
+      central.push(cat([n32(0x02014b50),n16(20),n16(20),n16(0),n16(0),n16(0),n16(0),n32(crc),n32(d.length),n32(d.length),n16(nm.length),n16(0),n16(0),n16(0),n16(0),n32(0),n32(at),nm]));});
+    var cdStart=off,cd=cat(central);push(cd);
+    push(cat([n32(0x06054b50),n16(0),n16(0),n16(files.length),n16(files.length),n32(cd.length),n32(cdStart),n16(0)]));
+    return new Blob(parts,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});}
+  function dec(s){var t=document.createElement('textarea');t.innerHTML=String(s==null?'':s);return t.value;}
+  function xesc(s){return dec(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function colL(i){return String.fromCharCode(65+i);}
+  function scell(ref,v,s){return '<c r="'+ref+'" t="inlineStr"'+(s?' s="'+s+'"':'')+'><is><t xml:space="preserve">'+xesc(v)+'</t></is></c>';}
+  function ncell(ref,v,s){if(v===''||v==null)return '<c r="'+ref+'"'+(s?' s="'+s+'"':'')+'/>';return '<c r="'+ref+'"'+(s?' s="'+s+'"':'')+'><v>'+Number(v)+'</v></c>';}
+  window.exportPortfolioXlsx=function(){
+    var list=(typeof loadPF==='function')?loadPF():[];
+    if(!list.length){if(typeof toast==='function')toast('No vessels to export');return;}
+    var hdr=["Vessel","IMO","Type","Flag","Age (yrs)","Risk index","Band","Annual premium (£)"];
+    var rows='<row r="1">'+hdr.map(function(x,i){return scell(colL(i)+'1',x,1);}).join('')+'</row>';
+    list.forEach(function(it,idx){var r=idx+2;var band=it.gate?(it.gate==='decline'?'Decline':'Refer'):(it.band||'');
+      rows+='<row r="'+r+'">'+[scell('A'+r,it.name),scell('B'+r,it.imo||''),scell('C'+r,it.typeLabel||''),scell('D'+r,it.flag||''),ncell('E'+r,it.age==null?'':it.age),ncell('F'+r,it.score),scell('G'+r,band),ncell('H'+r,it.premium,2)].join('')+'</row>';});
+    var sheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+COLS+'<sheetData>'+rows+'</sheetData></worksheet>';
+    var blob=zip([{name:'[Content_Types].xml',data:u8(CT)},{name:'_rels/.rels',data:u8(RELS)},{name:'xl/workbook.xml',data:u8(WB)},{name:'xl/_rels/workbook.xml.rels',data:u8(WBR)},{name:'xl/styles.xml',data:u8(STY)},{name:'xl/worksheets/sheet1.xml',data:u8(sheet)}]);
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='marine-portfolio.xlsx';a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    if(typeof toast==='function')toast('Exported '+list.length+' vessels to Excel');
+  };
+})();
 </script>
 </body>
 </html>
