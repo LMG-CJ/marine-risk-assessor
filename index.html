@@ -939,6 +939,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .fx-line .fx-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--band-1); font-weight: 650; margin-left: 5px; }
   .fx-line .fx-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--band-1); display: inline-block; }
 
+  .imo-status { font-size: 11px; font-weight: 600; line-height: 1.35; min-height: 14px; }
   .imo-status.loading { color: var(--accent); }
   .imo-status.found { color: var(--band-1); }
   .imo-status.none { color: var(--muted); }
@@ -980,7 +981,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
         <div class="ident">
           <div class="field"><label for="f-name">Vessel name</label><input type="text" id="f-name" placeholder="e.g. MV Northern Trader" autocomplete="off" /></div>
-          <div class="field"><label for="f-imo">IMO number <span class="hint imo-status" id="imo-status"></span></label><input type="text" id="f-imo" placeholder="e.g. 9456321" inputmode="numeric" maxlength="7" autocomplete="off" /></div>
+          <div class="field"><label for="f-imo">IMO number</label><input type="text" id="f-imo" placeholder="e.g. 9456321" inputmode="numeric" maxlength="7" autocomplete="off" /><span class="imo-status" id="imo-status"></span></div>
         </div>
       </div>
 
@@ -1884,7 +1885,7 @@ var MOCK_VESSELS = {
 
 function setImoStatus(state, text){
   var el = document.getElementById('imo-status'); if (!el) return;
-  el.className = 'hint imo-status ' + (state || '');
+  el.className = 'imo-status ' + (state || '');
   el.innerHTML = state === 'loading' ? '<span class="imo-spin"></span>' + text : text;
 }
 
@@ -1902,11 +1903,11 @@ function lookupVessel(imo, opts){
   opts = opts || {};
   imo = String(imo || '').replace(/\D/g, '');
   if (imo.length !== 7) { if (!opts.silent) setImoStatus('none', ''); return; }
-  setImoStatus('loading', 'Looking up registry…');
+  setImoStatus('loading', 'Looking up…');
   setTimeout(function(){
     var v = MOCK_VESSELS[imo];
-    if (v) { applyVessel(v); setImoStatus('found', '✓ particulars auto-filled'); if (!opts.silent) toast('Vessel found — particulars auto-filled from registry (demo data)'); }
-    else { setImoStatus('none', 'no match in demo dataset — enter manually'); }
+    if (v) { applyVessel(v); setImoStatus('found', '✓ auto-filled (demo)'); if (!opts.silent) toast('Vessel found — particulars auto-filled from registry (demo data)'); }
+    else { setImoStatus('none', 'No match — enter manually'); }
   }, opts.fast ? 60 : 520);
 }
 
