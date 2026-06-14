@@ -946,6 +946,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .imo-spin { display:inline-block; width:9px; height:9px; border:2px solid var(--accent); border-right-color:transparent; border-radius:50%; vertical-align:-1px; margin-right:4px; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ---- Responsive: tablet / phone (on-the-go) — additive only, desktop unchanged ---- */
+  @media (max-width: 760px) {
+    .topbar { height: auto; min-height: 54px; flex-wrap: wrap; padding: 9px 12px; gap: 8px 10px; }
+    .brand small { display: none; }
+    .spacer { display: none; }
+    .wrap { padding: 14px 12px; }
+  }
+  @media (max-width: 560px) {
+    .topbar .btn.ghost { display: none; }
+    .brand { font-size: 14px; }
+    .form-head h1 { font-size: 19px; }
+    .ident { grid-template-columns: 1fr; }
+    .section .body { grid-template-columns: 1fr; padding: 4px 14px 16px; }
+    .section > header { padding: 13px 14px; }
+    [data-fieldwrap="warareas"] > div { grid-template-columns: 1fr !important; }
+    #pf-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .pf-table { min-width: 540px; }
+  }
+
   @media print {
     .topbar, .seg, .form-card, .footnote, .no-print { display: none !important; }
     body { background: #fff; }
