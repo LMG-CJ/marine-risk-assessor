@@ -1,3 +1,6 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# Local wrangler state (contains Cloudflare account id)
+.wrangler/
